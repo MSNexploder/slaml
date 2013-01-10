@@ -116,7 +116,7 @@ module Slaml
       end
     end
 
-def get_indent(line)
+    def get_indent(line)
       # Figure out the indentation. Kinda ugly/slow way to support tabs,
       # but remember that this is only done at parsing time.
       line[/\A[ \t]*/].gsub("\t", @tab).size
@@ -172,18 +172,38 @@ def get_indent(line)
       case @line
       when /\A!!!\s*/
         # Found doctype declaration
-        @stacks.last << [:html, :doctype, parse_doctype($'.strip)]
+        @stacks.last << [:html, :doctype, parse_doctype($')]
       when /\A\/\[\s*(.*?)\s*\]\s*\Z/
         # HTML conditional comment
         block = [:multi]
         @stacks.last << [:html, :condcomment, $1, block]
         @stacks << block
-      when /\A\/( ?)/
+      when /\A\//
         # HTML comment
-        @stacks.last << [:html, :comment, [:static, $']]
+        comment = " #{$'.strip} "
+        @stacks.last << [:html, :comment, [:static, comment]]
+      when /\A%/
+        # HTML element
+        tag = [:html, :tag, $', [:html, :attrs]]
+        @stacks.last << tag
+
+        content = [:multi]
+        tag << content
+        @stacks << content
       when /\A-#/
         # Haml comment
         parse_comment_block
+      when /\A&=/
+        # HTML escaping
+        @stacks.last << [:escape, true, [:dynamic, $']]
+      when /\A!=/
+        # HTML unescaping
+        @stacks.last << [:escape, false, [:dynamic, $']]
+      when /\A=/
+        @stacks.last << [:escape, options[:escape_html], [:dynamic, $']]
+      when /\A-/
+        # Ruby code
+        @stacks.last << [:code, $']
       when /\A\\=/
         # Plain text escaping
         @stacks.last << [:static, $']
@@ -194,7 +214,7 @@ def get_indent(line)
     end
 
     def parse_doctype(str)
-      str = str.downcase
+      str = str.strip.downcase
 
       case options[:format].to_s
       when 'html5'

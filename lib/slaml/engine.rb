@@ -12,6 +12,7 @@ module Slaml
     html :Pretty, :format, :attr_wrapper, :pretty, :indent
 
     filter :ControlFlow
+    filter :Escapable, :use_html_safe, :disable_escape
 
     filter :MultiFlattener
     use :Optimizer do
