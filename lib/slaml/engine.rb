@@ -7,12 +7,12 @@ module Slaml
                    :attr_wrapper => '"',
                    :generator => Temple::Generators::ArrayBuffer
 
-    use Slaml::Parser, :file, :tabsize, :format, :encoding
+    use Slaml::Parser, :file, :escape_html, :tabsize, :format, :encoding
 
     html :Pretty, :format, :attr_wrapper, :pretty, :indent
 
     filter :ControlFlow
-    
+
     filter :MultiFlattener
     use :Optimizer do
       (options[:streaming] ? Temple::Filters::StaticMerger : Temple::Filters::DynamicInliner).new

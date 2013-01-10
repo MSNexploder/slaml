@@ -4,6 +4,7 @@ module Slaml
   class Parser < Temple::Parser
     define_options :file,
                    :tabsize => 4,
+                   :escape_html => false,
                    :format => 'html5',
                    :encoding => 'utf-8'
 
@@ -183,6 +184,9 @@ def get_indent(line)
       when /\A-#/
         # Haml comment
         parse_comment_block
+      when /\A\\=/
+        # Plain text escaping
+        @stacks.last << [:static, $']
       else
         syntax_error! 'Unknown line indicator'
       end
