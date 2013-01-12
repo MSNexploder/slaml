@@ -11,6 +11,8 @@ module Slaml
 
     html :Pretty, :format, :attr_wrapper, :pretty, :indent
 
+    html :AttributeSorter, :sort_attrs
+
     filter :ControlFlow
     filter :Escapable, :use_html_safe, :disable_escape
 

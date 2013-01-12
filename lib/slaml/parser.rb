@@ -54,6 +54,8 @@ module Slaml
 
     protected
 
+    WORD_RE = ''.respond_to?(:encoding) ? '\p{Word}' : '\w'
+
     # Set string encoding if option is set
     def set_encoding(s)
       if options[:encoding] && s.respond_to?(:encoding)
@@ -182,14 +184,10 @@ module Slaml
         # HTML comment
         comment = " #{$'.strip} "
         @stacks.last << [:html, :comment, [:static, comment]]
-      when /\A%/
+      when /\A%(#{WORD_RE}+)/
         # HTML element
-        tag = [:html, :tag, $', [:html, :attrs]]
-        @stacks.last << tag
-
-        content = [:multi]
-        tag << content
-        @stacks << content
+        @line = $'
+        parse_tag($1)
       when /\A-#/
         # Haml comment
         parse_comment_block
@@ -211,6 +209,40 @@ module Slaml
         syntax_error! 'Unknown line indicator'
       end
       @stacks.last << [:newline]
+    end
+
+    def parse_tag(tag)
+      tag = [:html, :tag, tag, parse_attributes]
+      @stacks.last << tag
+
+      case @line
+      when /\A\s*\Z/
+        # Empty content
+        content = [:multi]
+        tag << content
+        @stacks << content
+      when /\A\s*\//
+        # Closed tag. Do nothing
+      when /\A( ?)(.*)\Z/
+        # Text content
+        tag << [:static, $2]
+      end
+    end
+
+    def parse_attributes
+      attributes = [:html, :attrs]
+
+      # Find any shortcut attributes
+      attr_shortcut = {
+        '.' => 'class',
+        '#' => 'id'
+      }
+      while @line =~ /\A([\.#])(#{WORD_RE}+)/
+        attributes << [:html, :attr, attr_shortcut[$1], [:static, $2]]
+        @line = $'
+      end
+
+      attributes
     end
 
     def parse_doctype(str)
