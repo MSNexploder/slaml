@@ -197,17 +197,21 @@ module Slaml
       when /\A&=/
         # HTML escaping
         @line = $'
-        @stacks.last << [:escape, true, [:dynamic, parse_ruby_line]]
+        @stacks.last << [:escape, true, [:dynamic, parse_broken_line]]
       when /\A!=/
         # HTML unescaping
         @line = $'
-        @stacks.last << [:escape, false, [:dynamic, parse_ruby_line]]
+        @stacks.last << [:escape, false, [:dynamic, parse_broken_line]]
       when /\A=/
         @line = $'
-        @stacks.last << [:escape, options[:escape_html], [:dynamic, parse_ruby_line]]
+        @stacks.last << [:escape, options[:escape_html], [:dynamic, parse_broken_line]]
       when /\A-/
-        # Ruby code
-        @stacks.last << [:code, $']
+        # Ruby code block
+        # We expect the line to be broken or the next line to be indented.
+        @line.slice!(0)
+        block = [:multi]
+        @stacks.last << [:slaml, :control, parse_broken_line, block]
+        @stacks << block
       when /\A\\=/
         # Plain text escaping
         @stacks.last << [:static, $']
@@ -219,9 +223,9 @@ module Slaml
       @stacks.last << [:newline]
     end
 
-    def parse_ruby_line
+    def parse_broken_line
       broken_line = @line.strip
-      while broken_line =~ /[,|]\Z/
+      while broken_line =~ /[,]s*\Z/
         expect_next_line
         broken_line << "\n" << @line
       end
@@ -236,7 +240,7 @@ module Slaml
       when /\A\s*=(=?)/
         # Handle output code
         @line = $'
-        content = [:multi, [:escape, $1 != '=', [:dynamic, parse_ruby_line]]]
+        content = [:multi, [:escape, $1 != '=', [:dynamic, parse_broken_line]]]
         tag << content
         @stacks << content
       when /\A\s*\Z/

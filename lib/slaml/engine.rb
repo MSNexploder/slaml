@@ -9,6 +9,9 @@ module Slaml
 
     use Slaml::Parser, :file, :escape_html, :tabsize, :format, :encoding
 
+    use Slaml::EndInserter
+    use Slaml::ControlStructures, :disable_capture
+
     html :Pretty, :format, :attr_wrapper, :pretty, :indent
 
     html :AttributeSorter, :sort_attrs
