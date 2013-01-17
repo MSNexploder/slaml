@@ -4,7 +4,7 @@ module Slaml
   class Engine < Temple::Engine
     define_options :pretty => false,
                    :sort_attrs => true,
-                   :attr_wrapper => '"',
+                   :attr_wrapper => "'",
                    :generator => Temple::Generators::ArrayBuffer
 
     use Slaml::Parser, :file, :escape_html, :tabsize, :format, :encoding

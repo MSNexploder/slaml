@@ -184,31 +184,48 @@ module Slaml
         # HTML comment
         comment = " #{$'.strip} "
         @stacks.last << [:html, :comment, [:static, comment]]
-      when /\A%(#{WORD_RE}+)/
+      when /\A%([#{WORD_RE}:]+)/
         # HTML element
         @line = $'
         parse_tag($1)
+      when /\A[\.#]/
+        # id / class shortcut
+        parse_tag('div')
       when /\A-#/
         # Haml comment
         parse_comment_block
       when /\A&=/
         # HTML escaping
-        @stacks.last << [:escape, true, [:dynamic, $']]
+        @line = $'
+        @stacks.last << [:escape, true, [:dynamic, parse_ruby_line]]
       when /\A!=/
         # HTML unescaping
-        @stacks.last << [:escape, false, [:dynamic, $']]
+        @line = $'
+        @stacks.last << [:escape, false, [:dynamic, parse_ruby_line]]
       when /\A=/
-        @stacks.last << [:escape, options[:escape_html], [:dynamic, $']]
+        @line = $'
+        @stacks.last << [:escape, options[:escape_html], [:dynamic, parse_ruby_line]]
       when /\A-/
         # Ruby code
         @stacks.last << [:code, $']
       when /\A\\=/
         # Plain text escaping
         @stacks.last << [:static, $']
+      when /\A(.*)/
+        @stacks.last << [:static, $1]
       else
         syntax_error! 'Unknown line indicator'
       end
       @stacks.last << [:newline]
+    end
+
+    def parse_ruby_line
+      broken_line = @line.strip
+      while broken_line =~ /[,|]\Z/
+        expect_next_line
+        broken_line << "\n" << @line
+      end
+      broken_line
     end
 
     def parse_tag(tag)
@@ -216,16 +233,27 @@ module Slaml
       @stacks.last << tag
 
       case @line
+      when /\A\s*=(=?)/
+        # Handle output code
+        @line = $'
+        content = [:multi, [:escape, $1 != '=', [:dynamic, parse_ruby_line]]]
+        tag << content
+        @stacks << content
       when /\A\s*\Z/
         # Empty content
         content = [:multi]
         tag << content
         @stacks << content
-      when /\A\s*\//
+      when /\A\s*\/\s*/
         # Closed tag. Do nothing
+        @line = $'
+        syntax_error!('Unexpected text after closed tag') unless @line.empty?
       when /\A( ?)(.*)\Z/
         # Text content
-        tag << [:static, $2]
+        content = [:multi]
+        content << [:static, $2]
+        tag << content
+        @stacks << content
       end
     end
 
