@@ -4,15 +4,15 @@ module Slaml
   class Engine < Temple::Engine
     define_options :pretty => false,
                    :sort_attrs => true,
-                   :attr_wrapper => "'",
+                   :attr_quote => "'",
                    :generator => Temple::Generators::ArrayBuffer
 
     use Slaml::Parser, :file, :escape_html, :tabsize, :format, :encoding
 
     use Slaml::EndInserter
-    use Slaml::ControlStructures, :disable_capture
+    use Slaml::Controls, :disable_capture
 
-    html :Pretty, :format, :attr_wrapper, :pretty, :indent
+    html :Pretty, :format, :attr_quote, :pretty, :indent
 
     html :AttributeSorter, :sort_attrs
 

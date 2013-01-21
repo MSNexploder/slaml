@@ -1,6 +1,6 @@
 module Slaml
   # @api private
-  class ControlStructures < Filter
+  class Controls < Filter
     define_options :disable_capture
 
     # Handle control expression `[:slaml, :control, code, content]`
