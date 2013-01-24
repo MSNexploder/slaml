@@ -11,5 +11,20 @@ module Slaml
     def on_slaml_control(code, content)
       [:slaml, :control, code, compile(content)]
     end
+
+    # Pass-through handler
+    def on_slaml_embedded(type, content)
+      [:slaml, :embedded, code, compile(content)]
+    end
+
+    # Pass-through handler
+    def on_slaml_control(code, content)
+      [:slaml, :control, code, compile(content)]
+    end
+
+    # Pass-through handler
+    def on_slaml_output(code, escape, content)
+      [:slaml, :output, code, escape, compile(content)]
+    end
   end
 end

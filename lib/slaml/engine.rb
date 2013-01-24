@@ -5,9 +5,12 @@ module Slaml
     define_options :pretty => false,
                    :sort_attrs => true,
                    :attr_quote => "'",
+                   :merge_attrs => {'class' => ' '},
                    :generator => Temple::Generators::ArrayBuffer
 
     use Slaml::Parser, :file, :escape_html, :tabsize, :format, :encoding
+    use Slaml::Embedded, :enable_engines, :disable_engines, :pretty
+    use Slaml::Interpolation
 
     use Slaml::EndInserter
     use Slaml::Controls, :disable_capture
@@ -15,6 +18,7 @@ module Slaml
     html :Pretty, :format, :attr_quote, :pretty, :indent
 
     html :AttributeSorter, :sort_attrs
+    html :AttributeMerger, :merge_attrs
 
     filter :ControlFlow
     filter :Escapable, :use_html_safe, :disable_escape

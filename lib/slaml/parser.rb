@@ -212,6 +212,9 @@ module Slaml
         block = [:multi]
         @stacks.last << [:slaml, :control, parse_broken_line, block]
         @stacks << block
+      when /\A:(\w+)\s*\Z/
+        # Embedded template detected. It is treated as block.
+        @stacks.last << [:slaml, :embedded, $1, parse_text_block]
       when /\A\\=/
         # Plain text escaping
         @stacks.last << [:static, $']
@@ -307,6 +310,50 @@ module Slaml
         next_line
         @stacks.last << [:newline]
       end
+    end
+
+    def parse_text_block(first_line = nil, text_indent = nil)
+      result = [:multi]
+      if !first_line || first_line.empty?
+        text_indent = nil
+      else
+        result << [:slaml, :interpolate, first_line]
+      end
+
+      empty_lines = 0
+      until @lines.empty?
+        if @lines.first =~ /\A\s*\Z/
+          next_line
+          result << [:newline]
+          empty_lines += 1 if text_indent
+        else
+          indent = get_indent(@lines.first)
+          break if indent <= @indents.last
+
+          if empty_lines > 0
+            result << [:slaml, :interpolate, "\n" * empty_lines]
+            empty_lines = 0
+          end
+
+          next_line
+          @line.lstrip!
+
+          # The text block lines must be at least indented
+          # as deep as the first line.
+          offset = text_indent ? indent - text_indent : 0
+          if offset < 0
+            syntax_error!("Text line not indented deep enough.\n" +
+                          "The first text line defines the necessary text indentation.")
+          end
+
+          result << [:newline] << [:slaml, :interpolate, (text_indent ? "\n" : '') + (' ' * offset) + @line]
+
+          # The indentation of first line of the text block
+          # determines the text base indentation.
+          text_indent ||= indent
+        end
+      end
+      result
     end
 
     # Helper for raising exceptions
