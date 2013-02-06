@@ -221,10 +221,42 @@ module Slaml
       end
     end
 
+    # Javascript wrapper engine.
+    # Like TagEngine, but can wrap content in html comment or cdata.
+    class JavaScriptEngine < TagEngine
+      disable_option_validator!
+
+      set_default_options :tag => :script, :attributes => { :type => 'text/javascript' }
+
+      def on_slim_embedded(engine, body)
+        super(engine, [:html, :js, body])
+      end
+    end
+
     # Embeds ruby code
     class RubyEngine < Engine
       def on_slaml_embedded(engine, body)
         [:multi, [:newline], [:code, collect_text(body)]]
+      end
+    end
+
+    # Embeds plain text
+    class PlainEngine < Engine
+      disable_option_validator!
+
+      def on_slaml_embedded(engine, body)
+        [:multi, [:newline], [:escape, options[:escape_html], [:static, collect_text(body)]], collect_newlines(body)]
+      end
+    end
+
+    # Embeds output inside cdata
+    class CDATAEngine < Engine
+      disable_option_validator!
+
+      def on_slaml_embedded(engine, body)
+        [:multi, [:newline], [:static, '<![CDATA['], [:newline],
+            [:static, collect_text(body)], [:newline],
+            [:static, ']]>'], [:newline], collect_newlines(body)]
       end
     end
 
@@ -237,8 +269,8 @@ module Slaml
     register :mediawiki,    InterpolateTiltEngine
 
     # These engines are executed at compile time
-    register :coffee,       TagEngine, :tag => :script, :attributes => { :type => 'text/javascript' },  :engine => StaticTiltEngine
-    register :coffeescript, TagEngine, :tag => :script, :attributes => { :type => 'text/javascript' },  :engine => StaticTiltEngine
+    register :coffee,       JavaScriptEngine,                                                           :engine => StaticTiltEngine
+    register :coffeescript, JavaScriptEngine,                                                           :engine => StaticTiltEngine
     register :less,         TagEngine, :tag => :style,  :attributes => { :type => 'text/css' },         :engine => StaticTiltEngine
     register :styl,         TagEngine, :tag => :style,  :attributes => { :type => 'text/css' },         :engine => StaticTiltEngine
     register :sass,         TagEngine, :pretty, :tag => :style, :attributes => { :type => 'text/css' }, :engine => SassEngine
@@ -250,10 +282,17 @@ module Slaml
     register :builder,      PrecompiledTiltEngine
 
     # Embedded javascript/css
-    register :javascript,   TagEngine, :tag => :script, :attributes => { :type => 'text/javascript' }
+    register :javascript,   JavaScriptEngine
     register :css,          TagEngine, :tag => :style,  :attributes => { :type => 'text/css' }
 
     # Embedded ruby code
     register :ruby,         RubyEngine
+
+    # Plain text
+    register :plain,        PlainEngine, :escape_html => false
+    register :escaped,      PlainEngine, :escape_html => true
+
+    # CDATA
+    register :cdata,        CDATAEngine
   end
 end

@@ -14,7 +14,7 @@ module Slaml
 
     # Pass-through handler
     def on_slaml_embedded(type, content)
-      [:slaml, :embedded, code, compile(content)]
+      [:slaml, :embedded, type, compile(content)]
     end
 
     # Pass-through handler

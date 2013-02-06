@@ -6,6 +6,7 @@ module Slaml
                    :sort_attrs => true,
                    :attr_quote => "'",
                    :merge_attrs => {'class' => ' '},
+                   :override_attrs => %w(id),
                    :generator => Temple::Generators::ArrayBuffer
 
     use Slaml::Parser, :file, :escape_html, :tabsize, :format, :encoding
@@ -14,11 +15,12 @@ module Slaml
 
     use Slaml::EndInserter
     use Slaml::Controls, :disable_capture
-
-    html :Pretty, :format, :attr_quote, :pretty, :indent
+    use Slaml::AttributeOverrider, :override_attrs
 
     html :AttributeSorter, :sort_attrs
     html :AttributeMerger, :merge_attrs
+
+    html :Pretty, :format, :attr_quote, :pretty, :indent, :js_wrapper
 
     filter :ControlFlow
     filter :Escapable, :use_html_safe, :disable_escape

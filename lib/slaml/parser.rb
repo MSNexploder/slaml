@@ -61,7 +61,7 @@ module Slaml
 
     protected
 
-    WORD_RE = ''.respond_to?(:encoding) ? '\p{Word}' : '\w'
+    WORD_RE = ''.respond_to?(:encoding) ? '\p{Word}|[-]' : '\w|[-]'
 
     # Set string encoding if option is set
     def set_encoding(s)
@@ -279,7 +279,7 @@ module Slaml
         '.' => 'class',
         '#' => 'id'
       }
-      while @line =~ /\A([\.#])(#{WORD_RE}+)/
+      while @line =~ /\A([\.#])((?:#{WORD_RE})+)/
         attributes << [:html, :attr, attr_shortcut[$1], [:static, $2]]
         @line = $'
       end
