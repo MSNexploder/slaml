@@ -2,11 +2,12 @@ module Slaml
   # Slaml engine which transforms Haml code to executable ruby code
   # @api public
   class Engine < Temple::Engine
-    define_options :pretty => false,
+    define_options :pretty => true,
                    :sort_attrs => true,
                    :attr_quote => "'",
                    :merge_attrs => {'class' => ' '},
                    :override_attrs => %w(id),
+                   :encoding => 'utf-8',
                    :generator => Temple::Generators::ArrayBuffer
 
     use Slaml::Parser, :file, :escape_html, :tabsize, :format, :encoding
@@ -16,9 +17,9 @@ module Slaml
     use Slaml::EndInserter
     use Slaml::Controls, :disable_capture
     use Slaml::AttributeOverrider, :override_attrs
-
     html :AttributeSorter, :sort_attrs
     html :AttributeMerger, :merge_attrs
+    use Slaml::CodeAttributes, :merge_attrs
 
     html :Pretty, :format, :attr_quote, :pretty, :indent, :js_wrapper
 

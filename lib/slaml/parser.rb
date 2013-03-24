@@ -61,7 +61,15 @@ module Slaml
 
     protected
 
-    WORD_RE = ''.respond_to?(:encoding) ? '\p{Word}|[-]' : '\w|[-]'
+    WORD_RE = ''.respond_to?(:encoding) ? '\p{Word}' : '\w'
+    ATTR_NAME = "\\A\\s*(#{WORD_RE}(?:#{WORD_RE}|:|-)*)"
+    ATTR_VARIABLE = "(@?#{WORD_RE}+)"
+    RUBY_LITERAL = "((?::?#{WORD_RE}+)|(?:'(?:#{WORD_RE}|:)+')|(?:\"(?:#{WORD_RE}|:)+\"))"
+    BOOLEAN_HTML_ATTR_RE = /\A\s*#{ATTR_NAME}(?:=(true|false))?/
+    QUOTED_HTML_ATTR_RE = /\A\s*#{ATTR_NAME}=("|')/
+    CODE_HTML_ATTR_RE = /\A\s*#{ATTR_NAME}=#{ATTR_VARIABLE}/
+    STATIC_RUBY_ATTR_RE = /\A\s*#{RUBY_LITERAL}\s*(?:=>|:)\s*("|')/
+    CODE_RUBY_ATTR_RE = /\A\s*#{RUBY_LITERAL}\s*(?:=>|:)\s*#{ATTR_VARIABLE}\s*[,]?/
 
     # Set string encoding if option is set
     def set_encoding(s)
@@ -70,7 +78,10 @@ module Slaml
         s = s.dup if s.frozen?
         s.force_encoding(options[:encoding])
         # Fall back to old encoding if new encoding is invalid
-        s.force_encoding(old_enc) unless s.valid_encoding?
+        unless s.valid_encoding?
+          s.force_encoding(old_enc)
+          s.force_encoding(Encoding::BINARY) unless s.valid_encoding?
+        end
       end
       s
     end
@@ -189,9 +200,9 @@ module Slaml
         @stacks << block
       when /\A\//
         # HTML comment
-        comment = " #{$'.strip} "
-        @stacks.last << [:html, :comment, [:static, comment]]
-      when /\A%([#{WORD_RE}:]+)/
+        comment = parse_text_block($'.strip)
+        @stacks.last << [:html, :comment, [:multi, [:static, ' '], comment, [:static, ' ']]]
+      when /\A%([#{WORD_RE}:-]+)/
         # HTML element
         @line = $'
         parse_tag($1)
@@ -265,7 +276,7 @@ module Slaml
       when /\A( ?)(.*)\Z/
         # Text content
         content = [:multi]
-        content << [:static, $2]
+        content << [:escape, options[:escape_html], [:slaml, :interpolate, $2]]
         tag << content
         @stacks << content
       end
@@ -279,9 +290,24 @@ module Slaml
         '.' => 'class',
         '#' => 'id'
       }
-      while @line =~ /\A([\.#])((?:#{WORD_RE})+)/
+      while @line =~ /\A([\.#])((?:#{WORD_RE}|-)+)/
         attributes << [:html, :attr, attr_shortcut[$1], [:static, $2]]
         @line = $'
+      end
+
+      while true
+        case @line
+        # HTML Syntax
+        when /\A\s*\(/
+          @line = $'
+          attributes.concat(parse_html_attributes)
+        # Ruby 1.8 / 1.9 Syntax
+        when /\A\s*\{/
+          @line = $'
+          attributes.concat(parse_ruby_attributes)
+        else
+          break
+        end
       end
 
       attributes
@@ -361,6 +387,118 @@ module Slaml
         end
       end
       result
+    end
+
+    def parse_html_attributes
+      attributes = []
+      end_re = /\A\s*\)/
+      while true
+        case @line
+        when QUOTED_HTML_ATTR_RE
+          # Value is quoted (static)
+          @line = $'
+          attributes << [:html, :attr, $1,
+                         [:escape, options[:escape_html], [:slaml, :interpolate, parse_quoted_attribute($2)]]]
+        when CODE_HTML_ATTR_RE
+          # Value is dynamic
+          @line = $'
+          attributes << [:html, :attr, $1, [:slaml, :attrvalue, false, $2]]
+        when BOOLEAN_HTML_ATTR_RE
+          # Boolean attribute
+          @line = $'
+          attributes << [:html, :attr, $1, [:slaml, :attrvalue, false, $2 || true]]
+        else
+          case @line
+          when end_re
+            @line = $'
+            break
+          else
+            # Found something where an attribute should be
+            @line.lstrip!
+            syntax_error!('Expected attribute') unless @line.empty?
+
+            # Attributes span multiple lines
+            @stacks.last << [:newline]
+            syntax_error!("Expected closing delimiter #{delimiter}") if @lines.empty?
+            next_line
+          end
+        end
+      end
+      attributes
+    end
+
+    def parse_ruby_attributes
+      attributes = []
+      end_re = /\A\s*\}/
+      while true
+        case @line
+        when STATIC_RUBY_ATTR_RE
+          # Static value
+          @line = $'
+          name = $1
+          delim = $2
+          attributes << [:html, :attr, cleanup_attr_name(name),
+                         [:escape, options[:escape_html], [:slaml, :interpolate, parse_quoted_attribute(delim)]]]
+          
+          @line.match /\s*[,]?/
+          @line = $'
+        when CODE_RUBY_ATTR_RE
+          # Value is ruby code
+          @line = $'
+          name = $1
+          value = $2
+          attributes << [:html, :attr, cleanup_attr_name(name), [:slaml, :attrvalue, false, value]]
+        else
+          case @line
+          when end_re
+            @line = $'
+            break
+          else
+            # Found something where an attribute should be
+            @line.lstrip!
+            syntax_error!('Expected attribute') unless @line.empty?
+
+            # Attributes span multiple lines
+            @stacks.last << [:newline]
+            syntax_error!("Expected closing delimiter #{delimiter}") if @lines.empty?
+            next_line
+          end
+        end
+      end
+      attributes
+    end
+
+    def parse_quoted_attribute(quote)
+      value, count = '', 0
+
+      until @line.empty? || (count == 0 && @line[0] == quote[0])
+        if @line =~ /\A\\\Z/
+          value << ' '
+          expect_next_line
+        else
+          if count > 0
+            if @line[0] == ?{
+              count += 1
+            elsif @line[0] == ?}
+              count -= 1
+            end
+          elsif @line =~ /\A#\{/
+            value << @line.slice!(0)
+            count = 1
+          end
+          value << @line.slice!(0)
+        end
+      end
+
+      syntax_error!("Expected closing brace }") if count != 0
+      syntax_error!("Expected closing quote #{quote}") if @line[0] != quote[0]
+      @line.slice!(0)
+
+      value
+    end
+
+    def cleanup_attr_name(name)
+      name.sub(/\A:/, '').sub(/\A[\"'](.*)[\"']\Z/, '\1')
     end
 
     # Helper for raising exceptions

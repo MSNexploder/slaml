@@ -23,6 +23,10 @@ module Slaml
           string, code = parse_expression($')
           escape = code !~ /\A\{.*\}\Z/
           block << [:slaml, :output, escape, escape ? code : code[1..-2], [:multi]]
+        when /\A\\\\/
+          # Escaped escape
+          block << [:static, "\\"]
+          string = $'
         when /\A([#\\]|[^#\\]*)/
           # Static text
           block << [:static, $&]

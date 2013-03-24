@@ -23,8 +23,8 @@ module Slaml
     end
 
     # Pass-through handler
-    def on_slaml_output(code, escape, content)
-      [:slaml, :output, code, escape, compile(content)]
+    def on_slaml_output(escape, code, content)
+      [:slaml, :output, escape, code, compile(content)]
     end
   end
 end

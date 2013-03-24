@@ -228,7 +228,7 @@ module Slaml
 
       set_default_options :tag => :script, :attributes => { :type => 'text/javascript' }
 
-      def on_slim_embedded(engine, body)
+      def on_slaml_embedded(engine, body)
         super(engine, [:html, :js, body])
       end
     end
@@ -245,7 +245,7 @@ module Slaml
       disable_option_validator!
 
       def on_slaml_embedded(engine, body)
-        [:multi, [:newline], [:escape, options[:escape_html], [:static, collect_text(body)]], collect_newlines(body)]
+        [:multi, [:newline], [:escape, options[:escape_html], [:slaml, :interpolate, collect_text(body)]], collect_newlines(body)]
       end
     end
 

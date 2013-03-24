@@ -17,9 +17,9 @@ Gem::Specification.new do |gem|
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
   gem.require_paths = ["lib"]
 
-  gem.add_runtime_dependency('temple', ['~> 0.6.2'])
-  gem.add_runtime_dependency('tilt', ['~> 1.3.3'])
+  gem.add_runtime_dependency('temple', ['~> 0.6.3'])
+  gem.add_runtime_dependency('tilt', ['~> 1.3', '>= 1.3.3'])
 
   gem.add_development_dependency('rake', ['~> 10.0.3'])
-  gem.add_development_dependency('minitest', ['~> 4.5.0'])
+  gem.add_development_dependency('minitest', ['~> 5.0.1'])
 end
