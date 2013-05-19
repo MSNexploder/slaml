@@ -249,6 +249,23 @@ module Slaml
       end
     end
 
+    # Embeds plain text but preserves whitespace
+    class PreserveEngine < Engine
+      disable_option_validator!
+
+      def on_slaml_embedded(engine, body)
+        [:multi, [:newline], call(body)]
+      end
+
+      def on_slaml_interpolate(str)
+        [:escape, true, [:slaml, :interpolate, str.strip]]
+      end
+
+      def on_newline
+        [:multi, [:static, '&#x000A;'], [:newline]]
+      end
+    end
+
     # Embeds output inside cdata
     class CDATAEngine < Engine
       disable_option_validator!
@@ -291,6 +308,7 @@ module Slaml
     # Plain text
     register :plain,        PlainEngine, :escape_html => false
     register :escaped,      PlainEngine, :escape_html => true
+    register :preserve,     PreserveEngine
 
     # CDATA
     register :cdata,        CDATAEngine
