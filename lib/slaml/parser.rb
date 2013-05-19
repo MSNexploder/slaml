@@ -63,7 +63,7 @@ module Slaml
 
     WORD_RE = ''.respond_to?(:encoding) ? '\p{Word}' : '\w'
     ATTR_NAME = "\\A\\s*(#{WORD_RE}(?:#{WORD_RE}|:|-)*)"
-    ATTR_VARIABLE = "(@?#{WORD_RE}+)"
+    ATTR_VARIABLE = "(@?(?:#{WORD_RE}|[\\[\\]:()])+)"
     RUBY_LITERAL = "((?::?#{WORD_RE}+)|(?:'(?:#{WORD_RE}|:)+')|(?:\"(?:#{WORD_RE}|:)+\"))"
     BOOLEAN_HTML_ATTR_RE = /\A\s*#{ATTR_NAME}(?:=(true|false))?/
     QUOTED_HTML_ATTR_RE = /\A\s*#{ATTR_NAME}=("|')/
