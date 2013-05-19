@@ -192,7 +192,7 @@ module Slaml
       case @line
       when /\A!!!\s*/
         # Found doctype declaration
-        @stacks.last << [:html, :doctype, parse_doctype($')]
+        @stacks.last << parse_doctype($')
       when /\A\/\[\s*(.*?)\s*\]\s*\Z/
         # HTML conditional comment
         block = [:multi]
@@ -314,24 +314,35 @@ module Slaml
     end
 
     def parse_doctype(str)
-      str = str.strip.downcase
+      type, encoding = str.split
+      type = type ? type.strip.downcase : type
 
       case options[:format].to_s
       when 'html5'
-        # When the :format option is set to :html5, !!! is always <!DOCTYPE html>.
-        'html'
-      when 'html4'
-        if %w(strict frameset).include? str
-          str
+        if type == 'xml'
+          [:static, '']
         else
-          'transitional'
+          # When the :format option is set to :html5, !!! is always <!DOCTYPE html>.
+          [:html, :doctype, 'html']
+        end
+      when 'html4'
+        if type == 'xml'
+          [:static, '']
+        elsif %w(strict frameset).include? type
+          [:html, :doctype, type]
+        else
+          [:html, :doctype, 'transitional']
         end
       when 'xhtml'
-        # TODO missing !!! RDFa
-        if %w(strict frameset 5 1.1 basic mobile).include? str
-          str
+        if type == 'rdfa'
+          [:static, '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">']
+        elsif type == 'xml'
+          encoding = encoding || 'utf-8'
+          [:static, "<?xml version='1.0' encoding='#{encoding.strip}' ?>"]
+        elsif %w(strict frameset 5 1.1 basic mobile).include? type
+          [:html, :doctype, type]
         else
-          'transitional'
+          [:html, :doctype, 'transitional']
         end
       else
         syntax_error! 'Unknown format'
