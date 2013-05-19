@@ -1,6 +1,4 @@
 # Quark like Haml (unless the real Haml is in the house)
-require 'slaml'
-
 unless defined?(Haml)
   module Haml
     class Engine
