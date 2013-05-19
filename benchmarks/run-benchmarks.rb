@@ -47,7 +47,7 @@ class SlamlBenchmarks
       def run_slim_pretty; #{Slim::Engine.new(:pretty => true).call @slim_code}; end
       def run_slim_ugly; #{Slim::Engine.new.call @slim_code}; end
       def run_slaml_pretty; #{Slaml::Engine.new(:pretty => true).call @haml_code}; end
-      def run_slaml_ugly; #{Slaml::Engine.new.call @haml_code}; end
+      def run_slaml_ugly; #{Slaml::Engine.new(:pretty => false).call @haml_code}; end
     }
 
     bench('(1) erb')          { context.run_erb }
@@ -71,7 +71,7 @@ class SlamlBenchmarks
     tilt_slim_pretty = Slim::Template.new(:pretty => true) { @slim_code }
     tilt_slim_ugly   = Slim::Template.new { @slim_code }
     tilt_slaml_pretty= Slaml::Template.new(:pretty => true) { @haml_code }
-    tilt_slaml_ugly  = Slaml::Template.new { @haml_code }
+    tilt_slaml_ugly  = Slaml::Template.new(:pretty => false) { @haml_code }
 
     context  = Context.new
 
@@ -99,7 +99,7 @@ class SlamlBenchmarks
     slim_pretty  = Slim::Template.new(:pretty => true) { @slim_code }
     slim_ugly    = Slim::Template.new { @slim_code }
     slaml_pretty = Slaml::Template.new(:pretty => true) { @haml_code }
-    slaml_ugly   = Slaml::Template.new { @haml_code }
+    slaml_ugly   = Slaml::Template.new(:pretty => false) { @haml_code }
 
     bench('(3) erb')          { erb.result(context_binding) }
     bench('(3) erubis')       { erubis.result(context_binding) }
@@ -126,7 +126,7 @@ class SlamlBenchmarks
     bench('(4) haml pretty')  { Haml::Engine.new(@haml_code, :format => :html5).render(context) }
     bench('(4) haml ugly')    { Haml::Engine.new(@haml_code, :format => :html5, :ugly => true).render(context) }
     bench('(4) slaml pretty') { Slaml::Template.new(:pretty => true) { @haml_code }.render(context) }
-    bench('(4) slaml ugly')   { Slaml::Template.new { @haml_code }.render(context) }
+    bench('(4) slaml ugly')   { Slaml::Template.new(:pretty => false) { @haml_code }.render(context) }
   end
 
   def run
