@@ -5,7 +5,7 @@ module Slaml
     define_options :file,
                    :tabsize => 4,
                    :escape_html => false,
-                   :format => 'html5',
+                   :format => :html5,
                    :encoding => 'utf-8'
 
     class SyntaxError < StandardError
@@ -63,13 +63,14 @@ module Slaml
 
     WORD_RE = ''.respond_to?(:encoding) ? '\p{Word}' : '\w'
     ATTR_NAME = "\\A\\s*(#{WORD_RE}(?:#{WORD_RE}|:|-)*)"
-    ATTR_VARIABLE = "(@?(?:#{WORD_RE}|[\\[\\]:()])+)"
+    ATTR_VARIABLE = "(@?(?:#{WORD_RE})+)"
     RUBY_LITERAL = "((?::?#{WORD_RE}+)|(?:'(?:#{WORD_RE}|:)+')|(?:\"(?:#{WORD_RE}|:)+\"))"
+    RUBY_CALL = "(@?(?:#{WORD_RE}|[\\.\\[\\]:()])+)"
     BOOLEAN_HTML_ATTR_RE = /\A\s*#{ATTR_NAME}(?:=(true|false))?/
     QUOTED_HTML_ATTR_RE = /\A\s*#{ATTR_NAME}=("|')/
     CODE_HTML_ATTR_RE = /\A\s*#{ATTR_NAME}=#{ATTR_VARIABLE}/
     STATIC_RUBY_ATTR_RE = /\A\s*#{RUBY_LITERAL}\s*(?:=>|:)\s*("|')/
-    CODE_RUBY_ATTR_RE = /\A\s*#{RUBY_LITERAL}\s*(?:=>|:)\s*#{ATTR_VARIABLE}\s*[,]?/
+    CODE_RUBY_ATTR_RE = /\A\s*#{RUBY_LITERAL}\s*(?:=>|:)\s*#{RUBY_CALL}\s*[,]?/
 
     # Set string encoding if option is set
     def set_encoding(s)
@@ -430,7 +431,7 @@ module Slaml
 
             # Attributes span multiple lines
             @stacks.last << [:newline]
-            syntax_error!("Expected closing delimiter #{delimiter}") if @lines.empty?
+            syntax_error!("Expected closing delimiter )") if @lines.empty?
             next_line
           end
         end
@@ -471,7 +472,7 @@ module Slaml
 
             # Attributes span multiple lines
             @stacks.last << [:newline]
-            syntax_error!("Expected closing delimiter #{delimiter}") if @lines.empty?
+            syntax_error!("Expected closing delimiter }") if @lines.empty?
             next_line
           end
         end

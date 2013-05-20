@@ -1,4 +1,6 @@
 # Quark like Haml (unless the real Haml is in the house)
+require 'slaml'
+
 unless defined?(Haml)
   module Haml
     class Engine
@@ -23,7 +25,8 @@ unless defined?(Haml)
 
       def slaml_options
         {
-          :pretty => !@options[:ugly]
+          :pretty => !@options[:ugly],
+          :format => @options[:format] || :html5
         }
       end
     end
