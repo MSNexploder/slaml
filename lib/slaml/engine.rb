@@ -5,8 +5,9 @@ module Slaml
     define_options :pretty => true,
                    :sort_attrs => true,
                    :attr_quote => "'",
-                   :merge_attrs => {'class' => ' '},
+                   :merge_attrs => {'class' => ' ', 'id' => '_'},
                    :override_attrs => %w(id),
+                   :sort_attr_keys => %(class),
                    :encoding => 'utf-8',
                    :generator => Temple::Generators::ArrayBuffer
 
@@ -17,6 +18,7 @@ module Slaml
     use Slaml::EndInserter
     use Slaml::Controls, :disable_capture
     use Slaml::AttributeOverrider, :override_attrs
+    use Slaml::AttributeValueSorter, :sort_attrs, :sort_attr_keys
     html :AttributeSorter, :sort_attrs
     html :AttributeMerger, :merge_attrs
     use Slaml::CodeAttributes, :merge_attrs
