@@ -5,8 +5,7 @@ module Slaml
     define_options :file,
                    :tabsize => 4,
                    :escape_html => false,
-                   :format => :html5,
-                   :encoding => 'utf-8'
+                   :format => :html5
 
     class SyntaxError < StandardError
       attr_reader :error, :file, :line, :lineno, :column
@@ -48,8 +47,6 @@ module Slaml
     # @param [String] str Haml code
     # @return [Array] Temple expression representing the code]]
     def call(str)
-      str = remove_bom(set_encoding(str))
-
       result = [:multi]
       reset(str.split(/\r?\n/), [result])
 
@@ -71,34 +68,6 @@ module Slaml
     CODE_HTML_ATTR_RE = /\A\s*#{ATTR_NAME}=#{ATTR_VARIABLE}/
     STATIC_RUBY_ATTR_RE = /\A\s*#{RUBY_LITERAL}\s*(?:=>|:)\s*("|')/
     CODE_RUBY_ATTR_RE = /\A\s*#{RUBY_LITERAL}\s*(?:=>|:)\s*#{RUBY_CALL}\s*[,]?/
-
-    # Set string encoding if option is set
-    def set_encoding(s)
-      if options[:encoding] && s.respond_to?(:encoding)
-        old_enc = s.encoding
-        s = s.dup if s.frozen?
-        s.force_encoding(options[:encoding])
-        # Fall back to old encoding if new encoding is invalid
-        unless s.valid_encoding?
-          s.force_encoding(old_enc)
-          s.force_encoding(Encoding::BINARY) unless s.valid_encoding?
-        end
-      end
-      s
-    end
-
-    # Remove unicode byte order mark from string
-    def remove_bom(s)
-      if s.respond_to?(:encoding)
-        if s.encoding.name =~ /^UTF-(8|16|32)(BE|LE)?/
-          s.gsub(Regexp.new("\\A\uFEFF".encode(s.encoding.name)), '')
-        else
-          s
-        end
-      else
-        s.gsub(/\A\xEF\xBB\xBF/, '')
-      end
-    end
 
     def reset(lines = nil, stacks = nil)
       # Since you can indent however you like in Haml, we need to keep a list

@@ -11,7 +11,9 @@ module Slaml
                    :encoding => 'utf-8',
                    :generator => Temple::Generators::ArrayBuffer
 
-    use Slaml::Parser, :file, :escape_html, :tabsize, :format, :encoding
+    filter :Encoding, :encoding
+    filter :RemoveBOM
+    use Slaml::Parser, :file, :escape_html, :tabsize, :format
     use Slaml::Embedded, :enable_engines, :disable_engines, :pretty
     use Slaml::Interpolation
 
