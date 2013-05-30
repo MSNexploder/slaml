@@ -261,7 +261,12 @@ module Slaml
         '#' => 'id'
       }
       while @line =~ /\A([\.#])((?:#{WORD_RE}|-)+)/
-        attributes << [:html, :attr, attr_shortcut[$1], [:static, $2]]
+        if $1 == '#'
+          # special 'shortcut' case  - gets concatenated not overwritten
+          attributes << [:slaml, :shortattr, attr_shortcut[$1], [:static, $2]]
+        else
+          attributes << [:html, :attr, attr_shortcut[$1], [:static, $2]]
+        end
         @line = $'
       end
 

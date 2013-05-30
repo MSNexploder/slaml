@@ -13,16 +13,23 @@ module Slaml
     def on_html_attrs(*attrs)
       names = []
       values = {}
+      shortcuts = {}
 
       attrs.each do |attr|
         name, value = attr[2].to_s, attr[3]
+        # handle special haml shortcuts path
+        # e.g. concat ids instead of overriding
+        if attr[0] == :slaml && attr[1] == :shortattr
+          shortcuts[name] = value
+          next
+        end
+
         if values[name]
           if options[:override_attrs].include? name
             values[name] = [value]
           else
             values[name] << value
           end
-          
         else
           values[name] = [value]
           names << name
@@ -34,7 +41,11 @@ module Slaml
         vals.map { |v| [:html, :attr, name, v] }
       end
 
-      [:html, :attrs, *attrs.flatten(1)]
+      shortcut_attrs = shortcuts.map do |key, value|
+        [:html, :attr, key, value]
+      end
+
+      [:html, :attrs, *(shortcut_attrs + attrs.flatten(1))]
     end
   end
 end
