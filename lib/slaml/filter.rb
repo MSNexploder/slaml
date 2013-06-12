@@ -18,13 +18,18 @@ module Slaml
     end
 
     # Pass-through handler
-    def on_slaml_control(code, content)
-      [:slaml, :control, code, compile(content)]
+    def on_slaml_output(escape, code, content)
+      [:slaml, :output, escape, code, compile(content)]
     end
 
     # Pass-through handler
-    def on_slaml_output(escape, code, content)
-      [:slaml, :output, escape, code, compile(content)]
+    def on_slaml_whitespace(type, content)
+      [:slaml, :whitespace, type, compile(content)]
+    end
+
+    # Pass-through handler
+    def on_slaml_text(content)
+      [:slaml, :text, compile(content)]
     end
   end
 end

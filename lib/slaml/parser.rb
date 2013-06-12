@@ -225,7 +225,18 @@ module Slaml
 
     def parse_tag(tag)
       tag = [:html, :tag, tag, parse_attributes]
-      @stacks.last << tag
+      inner, outer = parse_whitespace_tag
+
+      if outer
+        @stacks.last << [:slaml, :whitespace, 'outer', tag]
+      else
+        @stacks.last << tag
+      end
+
+      if inner
+        tag << inner_tag = [:slaml, :whitespace, 'inner']
+        tag = inner_tag
+      end
 
       case @line
       when /\A\s*=(=?)/
@@ -373,6 +384,27 @@ module Slaml
         end
       end
       result
+    end
+
+    def parse_whitespace_tag
+      inner = false
+      outer = false
+      while true
+        case @line
+        when /\A</
+          # remove inner whitespace
+          @line = $'
+          inner = true
+        when /\A>/
+          # remove outer whitespace
+          @line = $'
+          outer = true
+        else
+          break
+        end
+      end
+
+      [inner, outer]
     end
 
     def parse_html_attributes

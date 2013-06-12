@@ -24,6 +24,7 @@ module Slaml
     html :AttributeSorter, :sort_attrs
     html :AttributeMerger, :merge_attrs
     use Slaml::CodeAttributes, :merge_attrs
+    use Slaml::WhitespaceRemover
 
     html :Pretty, :format, :attr_quote, :pretty, :indent, :js_wrapper
 
