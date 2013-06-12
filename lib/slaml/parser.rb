@@ -206,8 +206,9 @@ module Slaml
       when /\A\\=/
         # Plain text escaping
         @stacks.last << [:static, $']
-      when /\A(.*)/
-        @stacks.last << [:static, $1]
+      when /\A(\s*)/
+        # Plain text
+        @stacks.last << [:slaml, :text, parse_text_block($', @indents.last + $1.size, true)]
       else
         syntax_error! 'Unknown line indicator'
       end
@@ -243,12 +244,9 @@ module Slaml
         # Closed tag. Do nothing
         @line = $'
         syntax_error!('Unexpected text after closed tag') unless @line.empty?
-      when /\A( ?)(.*)\Z/
+      when /\A(\s*)(.*)\Z/
         # Text content
-        content = [:multi]
-        content << [:escape, options[:escape_html], [:slaml, :interpolate, $2]]
-        tag << content
-        @stacks << content
+        tag << [:slaml, :text, parse_text_block($2, @orig_line.size - @line.size + $1.size)]
       end
     end
 
@@ -326,7 +324,7 @@ module Slaml
       end
     end
 
-    def parse_text_block(first_line = nil, text_indent = nil)
+    def parse_text_block(first_line = nil, text_indent = nil, in_text = false)
       result = [:multi]
       if !first_line || first_line.empty?
         text_indent = nil
@@ -342,7 +340,11 @@ module Slaml
           empty_lines += 1 if text_indent
         else
           indent = get_indent(@lines.first)
-          break if indent <= @indents.last
+          if in_text
+            break if indent < @indents.last
+          else
+            break if indent <= @indents.last
+          end
 
           if empty_lines > 0
             result << [:slaml, :interpolate, "\n" * empty_lines]
@@ -360,7 +362,7 @@ module Slaml
                           "The first text line defines the necessary text indentation.")
           end
 
-          result << [:slaml, :interpolate, (text_indent ? "\n" : '') + (' ' * offset) + @line]
+          result << [:newline] << [:slaml, :interpolate, (text_indent ? "\n" : '') + (' ' * offset) + @line]
 
           # The indentation of first line of the text block
           # determines the text base indentation.

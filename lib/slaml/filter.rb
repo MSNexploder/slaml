@@ -8,8 +8,8 @@ module Slaml
   # @api private
   class Filter < Temple::HTML::Filter
     # Pass-through handler
-    def on_slaml_control(code, content)
-      [:slaml, :control, code, compile(content)]
+    def on_slaml_text(content)
+      [:slaml, :text, compile(content)]
     end
 
     # Pass-through handler
