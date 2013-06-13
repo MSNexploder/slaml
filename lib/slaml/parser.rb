@@ -459,8 +459,8 @@ module Slaml
           delim = $2
           attributes << [:html, :attr, cleanup_attr_name(name),
                          [:escape, options[:escape_html], [:slaml, :interpolate, parse_quoted_attribute(delim)]]]
-          
-          @line.match /\s*[,]?/
+
+          @line.match(/\s*[,]?/)
           @line = $'
         when CODE_RUBY_ATTR_RE
           # Value is ruby code

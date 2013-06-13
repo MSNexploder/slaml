@@ -26,10 +26,5 @@ module Slaml
     def on_slaml_whitespace(type, content)
       [:slaml, :whitespace, type, compile(content)]
     end
-
-    # Pass-through handler
-    def on_slaml_text(content)
-      [:slaml, :text, compile(content)]
-    end
   end
 end
