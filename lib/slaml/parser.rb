@@ -378,7 +378,7 @@ module Slaml
                           "The first text line defines the necessary text indentation.")
           end
 
-          result << [:newline] << [:slaml, :interpolate, (text_indent ? "\n" : '') + (' ' * offset) + @line]
+          result << [:slaml, :interpolate, (text_indent ? "\n" : '') + (' ' * offset) + @line]
 
           # The indentation of first line of the text block
           # determines the text base indentation.

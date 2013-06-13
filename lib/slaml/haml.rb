@@ -26,7 +26,8 @@ unless defined?(Haml)
       def slaml_options
         {
           :pretty => !@options[:ugly],
-          :format => @options[:format] || :html5
+          :format => (@options[:format] || :html5),
+          :escape_html => @options[:escape_html]
         }
       end
     end
