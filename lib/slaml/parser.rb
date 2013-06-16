@@ -58,16 +58,22 @@ module Slaml
 
     protected
 
+    DELIMS = {
+      '(' => ')',
+      '[' => ']',
+      '{' => '}',
+    }.freeze
+
     WORD_RE = ''.respond_to?(:encoding) ? '\p{Word}' : '\w'
+    DELIM_RE = /\A[#{Regexp.escape DELIMS.keys.join}]/
     ATTR_NAME = "\\A\\s*(#{WORD_RE}(?:#{WORD_RE}|:|-)*)"
     ATTR_VARIABLE = "(@?(?:#{WORD_RE})+)"
     RUBY_LITERAL = "((?::?#{WORD_RE}+)|(?:'(?:#{WORD_RE}|:)+')|(?:\"(?:#{WORD_RE}|:)+\"))"
-    RUBY_CALL = "(@?(?:#{WORD_RE}|[\\.\\[\\]:()])+)"
     BOOLEAN_HTML_ATTR_RE = /\A\s*#{ATTR_NAME}(?:=(true|false))?/
     QUOTED_HTML_ATTR_RE = /\A\s*#{ATTR_NAME}=("|')/
     CODE_HTML_ATTR_RE = /\A\s*#{ATTR_NAME}=#{ATTR_VARIABLE}/
     STATIC_RUBY_ATTR_RE = /\A\s*#{RUBY_LITERAL}\s*(?:=>|:)\s*("|')/
-    CODE_RUBY_ATTR_RE = /\A\s*#{RUBY_LITERAL}\s*(?:=>|:)\s*#{RUBY_CALL}\s*[,]?/
+    CODE_RUBY_ATTR_RE = /\A\s*#{RUBY_LITERAL}\s*(?:=>|:)\s*/
 
     def reset(lines = nil, stacks = nil)
       # Since you can indent however you like in Haml, we need to keep a list
@@ -471,8 +477,10 @@ module Slaml
           # Value is ruby code
           @line = $'
           name = $1
-          value = $2
-          attributes << [:html, :attr, cleanup_attr_name(name), [:slaml, :attrvalue, false, value]]
+          name.slice!(0) if name[0] == ':'
+          value = parse_ruby_code('}')
+          syntax_error!('Invalid empty attribute') if value.empty?
+          attributes << [:html, :attr, name, [:slaml, :attrvalue, false, value]]
         else
           case @line
           when end_re
@@ -491,6 +499,36 @@ module Slaml
         end
       end
       attributes
+    end
+
+    def parse_ruby_code(outer_delimiter)
+      code, count, delimiter, close_delimiter = '', 0, nil, nil
+
+      # Attribute ends with comma or attribute delimiter
+      end_re = /\A[,#{Regexp.escape outer_delimiter.to_s}]/
+
+      until @line.empty? || (count == 0 && @line =~ end_re)
+        if @line =~ /\A[,\\]\Z/
+          code << @line << "\n"
+          expect_next_line
+        else
+          if count > 0
+            if @line[0] == delimiter[0]
+              count += 1
+            elsif @line[0] == close_delimiter[0]
+              count -= 1
+            end
+          elsif @line =~ DELIM_RE
+            count = 1
+            delimiter, close_delimiter = $&, DELIMS[$&]
+          end
+          code << @line.slice!(0)
+        end
+      end
+      syntax_error!("Expected closing delimiter #{close_delimiter}") if count != 0
+
+      @line.slice!(0) if @line[0] == ',' # remove comma if present
+      code
     end
 
     def parse_quoted_attribute(quote)
