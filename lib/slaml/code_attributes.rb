@@ -37,7 +37,7 @@ module Slaml
       else
         # Attribute with merging
         @attr = name
-        return super
+        super
       end
     end
 

@@ -1,7 +1,9 @@
 # Quark like Haml (unless the real Haml is in the house)
-require 'slaml'
-
 unless defined?(Haml)
+  require 'slaml'
+
+  require 'slaml/haml/template'
+
   module Haml
     class Engine
       def initialize(template, options = {})

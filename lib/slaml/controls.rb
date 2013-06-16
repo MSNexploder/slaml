@@ -53,5 +53,5 @@ module Slaml
     def on_slaml_text(content)
       compile(content)
     end
-  end    
+  end
 end

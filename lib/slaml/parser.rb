@@ -190,9 +190,14 @@ module Slaml
         # HTML unescaping
         @line = $'
         @stacks.last << [:escape, false, [:dynamic, parse_broken_line]]
-      when /\A=/
+      when /\A=(=?)/
+        # Found an output block.
+        # We expect the line to be broken or the next line to be indented.
+        @line =~ /\A=(=?)/
         @line = $'
-        @stacks.last << [:escape, options[:escape_html], [:dynamic, parse_broken_line]]
+        block = [:multi]
+        @stacks.last << [:slaml, :output, $1 != '=', parse_broken_line, block]
+        @stacks << block
       when /\A-/
         # Ruby code block
         # We expect the line to be broken or the next line to be indented.
@@ -243,9 +248,9 @@ module Slaml
       when /\A\s*=(=?)/
         # Handle output code
         @line = $'
-        content = [:multi, [:escape, $1 != '=', [:dynamic, parse_broken_line]]]
-        tag << content
-        @stacks << content
+        block = [:multi]
+        tag << [:slaml, :output, $1 != '=', parse_broken_line, block]
+        @stacks << block
       when /\A\s*\Z/
         # Empty content
         content = [:multi]
